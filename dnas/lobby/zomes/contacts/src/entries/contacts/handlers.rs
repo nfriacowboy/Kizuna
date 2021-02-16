@@ -2,109 +2,107 @@
 #![allow(dead_code)]
 use std::collections::{hash_map, HashMap};
 
-use super::{AgentPubKeysWrapper, BooleanWrapper, Contact, ContactType};
+use super::{Contact, ContactType};
 
 use crate::{error, utils::to_timestamp};
 
 use hdk3::prelude::*;
 
-pub(crate) fn add_contacts(agent_ids: AgentPubKeysWrapper) -> ExternResult<AgentPubKeysWrapper> {
+pub(crate) fn add_contacts(agent_ids: Vec<AgentPubKey>) -> ExternResult<Vec<AgentPubKey>> {
     check_latest_state(&agent_ids, ContactType::Add)?;
     let added_contact = Contact::new(
         to_timestamp(sys_time()?),
-        agent_ids.0.clone(),
+        agent_ids.clone(),
         ContactType::Add,
     );
     create_entry(&added_contact)?;
     Ok(agent_ids)
 }
 
-pub(crate) fn remove_contacts(agent_ids: AgentPubKeysWrapper) -> ExternResult<AgentPubKeysWrapper> {
+pub(crate) fn remove_contacts(agent_ids: Vec<AgentPubKey>) -> ExternResult<Vec<AgentPubKey>> {
     check_latest_state(&agent_ids, ContactType::Remove)?;
 
     let removed_contact = Contact::new(
         to_timestamp(sys_time()?),
-        agent_ids.0.clone(),
+        agent_ids.clone(),
         ContactType::Remove,
     );
     create_entry(&removed_contact)?;
     Ok(agent_ids)
 }
 
-pub(crate) fn block_contacts(agent_ids: AgentPubKeysWrapper) -> ExternResult<AgentPubKeysWrapper> {
+pub(crate) fn block_contacts(agent_ids: Vec<AgentPubKey>) -> ExternResult<Vec<AgentPubKey>> {
     let me = agent_info()?.agent_latest_pubkey;
     // return err right away if trying to block oneself
-    if let true = agent_ids.0.contains(&me) {
+    if let true = agent_ids.contains(&me) {
         return error("cannot block yourself");
     }
 
     check_latest_state(&agent_ids, ContactType::Block)?;
     let blocked_contact = Contact::new(
         to_timestamp(sys_time()?),
-        agent_ids.0.clone(),
+        agent_ids.clone(),
         ContactType::Block,
     );
     create_entry(&blocked_contact)?;
     Ok(agent_ids)
 }
 
-pub(crate) fn unblock_contacts(
-    agent_ids: AgentPubKeysWrapper,
-) -> ExternResult<AgentPubKeysWrapper> {
+pub(crate) fn unblock_contacts(agent_ids: Vec<AgentPubKey>) -> ExternResult<Vec<AgentPubKey>> {
     check_latest_state(&agent_ids, ContactType::Unblock)?;
     let unblocked_contact = Contact::new(
         to_timestamp(sys_time()?),
-        agent_ids.0.clone(),
+        agent_ids.clone(),
         ContactType::Unblock,
     );
     create_entry(&unblocked_contact)?;
     Ok(agent_ids)
 }
 
-pub(crate) fn list_added() -> ExternResult<AgentPubKeysWrapper> {
+pub(crate) fn list_added() -> ExternResult<Vec<AgentPubKey>> {
     Ok(list_added_or_blocked(ContactType::Add)?)
 }
 
-pub(crate) fn list_blocked() -> ExternResult<AgentPubKeysWrapper> {
+pub(crate) fn list_blocked() -> ExternResult<Vec<AgentPubKey>> {
     Ok(list_added_or_blocked(ContactType::Block)?)
 }
 
-pub(crate) fn in_contacts(agent_pubkey: AgentPubKey) -> ExternResult<BooleanWrapper> {
-    let contacts_list = list_added()?.0;
+pub(crate) fn in_contacts(agent_pubkey: AgentPubKey) -> ExternResult<bool> {
+    let contacts_list = list_added()?;
     if contacts_list.len() == 0 {
-        Ok(BooleanWrapper(false))
+        Ok(false)
     } else {
         if contacts_list.iter().any(|pubkey| pubkey == &agent_pubkey) {
-            Ok(BooleanWrapper(true))
+            Ok(true)
         } else {
-            Ok(BooleanWrapper(false))
+            Ok(false)
         }
     }
 }
 
-pub(crate) fn in_blocked(agent_pubkey: AgentPubKey) -> ExternResult<BooleanWrapper> {
-    let blocked_list = list_blocked()?.0;
+pub(crate) fn in_blocked(agent_pubkey: AgentPubKey) -> ExternResult<bool> {
+    let blocked_list = list_blocked()?;
     if blocked_list.len() == 0 {
-        Ok(BooleanWrapper(false))
+        Ok(false)
     } else {
         if blocked_list.iter().any(|pubkey| pubkey == &agent_pubkey) {
-            Ok(BooleanWrapper(true))
+            Ok(true)
         } else {
-            Ok(BooleanWrapper(false))
+            Ok(false)
         }
     }
 }
 
 // HELPER FUNCTION
 fn check_latest_state(
-    agent_pubkeys: &AgentPubKeysWrapper,
+    agent_pubkeys: &Vec<AgentPubKey>,
     check_for: ContactType,
 ) -> ExternResult<()> {
     let mut agents_to_contact_type: HashMap<AgentPubKey, Option<Contact>> =
         std::collections::HashMap::new();
     let sorted_contacts = query_contacts()?;
 
-    for agent in &agent_pubkeys.0 {
+    for agent in agent_pubkeys {
         let maybe_contacts = sorted_contacts
             .clone()
             .into_iter()
@@ -182,7 +180,7 @@ fn check_latest_state(
 fn query_contacts() -> ExternResult<Vec<Contact>> {
     let filter = QueryFilter::new()
         .entry_type(EntryType::App(AppEntryType::new(
-            EntryDefIndex::from(0),
+            entry_def_index!(Contact)?,
             ZomeId::from(0),
             EntryVisibility::Private,
         )))
@@ -204,18 +202,18 @@ fn query_contacts() -> ExternResult<Vec<Contact>> {
     Ok(contacts)
 }
 
-fn list_added_or_blocked(filter: ContactType) -> ExternResult<AgentPubKeysWrapper> {
+fn list_added_or_blocked(filter: ContactType) -> ExternResult<Vec<AgentPubKey>> {
     let mut agents_to_contact_types: HashMap<AgentPubKey, Vec<Contact>> =
         std::collections::HashMap::new();
     let sorted_contacts = query_contacts()?;
 
-    for contact in &sorted_contacts {
+    for contact in sorted_contacts {
         for agent_id in &contact.agent_ids {
             let maybe_agent_contact = agents_to_contact_types.entry(agent_id.to_owned());
             match maybe_agent_contact {
                 hash_map::Entry::Occupied(o) => {
                     let contact_types: &mut Vec<Contact> = o.into_mut();
-                    contact_types.push(contact.to_owned());
+                    contact_types.push(contact.clone());
                 }
                 hash_map::Entry::Vacant(v) => {
                     let mut new_contact_types: Vec<Contact> = Vec::new();
@@ -244,5 +242,5 @@ fn list_added_or_blocked(filter: ContactType) -> ExternResult<AgentPubKeysWrappe
         })
         .collect();
 
-    Ok(AgentPubKeysWrapper(filtered_agents))
+    Ok(filtered_agents)
 }

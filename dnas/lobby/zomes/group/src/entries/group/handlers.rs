@@ -3,8 +3,7 @@ use hdk3::prelude::link::Link;
 use hdk3::prelude::*;
 use timestamp::Timestamp;
 
-use crate::utils;
-use crate::utils::to_timestamp;
+use crate::{error, utils};
 
 use super::{
     CreateGroupInput,
@@ -13,7 +12,6 @@ use super::{
     Group,
     //TYPES USED IN GET ALL MY GROUPS
     GroupOutput,
-    MyGroupListWrapper,
     //TYPES USED IN UPDATE GROUP NAME:
     UpdateGroupNameIO,
     //TYPES USED IN ADD MEMBERS AND REMOVE MEMBERS:
@@ -25,18 +23,16 @@ use crate::signals::{SignalDetails, SignalPayload};
 pub fn create_group(create_group_input: CreateGroupInput) -> ExternResult<CreateGroupOutput> {
     let group_name: String = create_group_input.name;
     let group_members: Vec<AgentPubKey> = create_group_input.members;
-    let created: Timestamp = to_timestamp(sys_time()?);
+    let created: Timestamp = utils::to_timestamp(sys_time()?);
     let creator: AgentPubKey = agent_info()?.agent_latest_pubkey;
 
     // get my blocked list from the contacs zome
-    let my_blocked_list: Vec<AgentPubKey> = utils::get_my_blocked_list()?.0;
+    let my_blocked_list: Vec<AgentPubKey> = utils::get_my_blocked_list()?;
 
     // if even one member of the group is in my blocked list we have to return an error
     for member in group_members.clone() {
         if my_blocked_list.contains(&member) {
-            return Err(HdkError::Wasm(WasmError::Zome(
-                "cannot create group with blocked agents".into(),
-            )));
+            return error("cannot create group with blocked agents");
         }
     }
 
@@ -72,19 +68,15 @@ pub fn add_members(add_members_input: UpdateMembersIO) -> ExternResult<UpdateMem
 
     // check whether members field is empty
     if new_group_members_from_input.is_empty() {
-        return Err(HdkError::Wasm(WasmError::Zome(
-            "members field is empty".into(),
-        )));
+        return error("members field is empty");
     }
 
     //check if any invitees are blocked and return Err if so.
-    let my_blocked_list: Vec<AgentPubKey> = utils::get_my_blocked_list()?.0;
+    let my_blocked_list: Vec<AgentPubKey> = utils::get_my_blocked_list()?;
 
     for member in new_group_members_from_input.clone() {
         if my_blocked_list.contains(&member) {
-            return Err(HdkError::Wasm(WasmError::Zome(
-                "cannot create group with blocked agents".into(),
-            )));
+            return error("cannot create group with blocked agents");
         }
     }
 
@@ -102,7 +94,7 @@ pub fn add_members(add_members_input: UpdateMembersIO) -> ExternResult<UpdateMem
     group_members.append(&mut new_group_members_from_input);
 
     let group_name: String = latest_group_version.name;
-    let created: Timestamp = to_timestamp(sys_time()?);
+    let created: Timestamp = utils::to_timestamp(sys_time()?);
 
     let updated_group: Group = Group::new(group_name, created, creator, group_members.clone());
 
@@ -129,9 +121,7 @@ pub fn remove_members(remove_members_input: UpdateMembersIO) -> ExternResult<Upd
 
     // check whether members field is empty
     if members_to_remove.is_empty() {
-        return Err(HdkError::Wasm(WasmError::Zome(
-            "members field is empty".into(),
-        )));
+        return error("members field is empty".into());
     }
 
     // get most recent Group Entry
@@ -144,7 +134,7 @@ pub fn remove_members(remove_members_input: UpdateMembersIO) -> ExternResult<Upd
     // update_entry the Group with new members field using the  original HeaderHash
     let creator: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let group_name: String = latest_group_version.name;
-    let created: Timestamp = to_timestamp(sys_time()?);
+    let created: Timestamp = utils::to_timestamp(sys_time()?);
 
     let updated_group: Group = Group::new(group_name, created, creator, group_members.clone());
 
@@ -182,12 +172,10 @@ pub fn update_group_name(
     // 2 - check whether the new name is the same with old name and return error if so
     let old_group_name: String = latest_group_version.name.clone();
     if new_group_name.eq(&old_group_name) {
-        return Err(HdkError::Wasm(WasmError::Zome(
-            "the new name and old name of the group are the same.".into(),
-        )));
+        return error("the new name and old name of the group are the same.");
     }
 
-    let created: Timestamp = to_timestamp(sys_time()?);
+    let created: Timestamp = utils::to_timestamp(sys_time()?);
     let creator: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let members: Vec<AgentPubKey> = latest_group_version.get_group_members();
 
@@ -200,7 +188,7 @@ pub fn update_group_name(
     Ok(update_group_name_input)
 }
 
-pub fn get_all_my_groups() -> ExternResult<MyGroupListWrapper> {
+pub fn get_all_my_groups() -> ExternResult<Vec<GroupOutput>> {
     let my_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let mut my_linked_groups_entries: Vec<GroupOutput> = vec![];
     let mut group_id: EntryHash;
@@ -224,9 +212,7 @@ pub fn get_all_my_groups() -> ExternResult<MyGroupListWrapper> {
                         // get original value of created and creator here
                         group = first_ver_group;
                     } else {
-                        return Err(HdkError::Wasm(WasmError::Zome(
-                            "this is a fatal error. Something is wrong with holochain.".into(),
-                        )));
+                        return error("this is a fatal error. Something is wrong with holochain.");
                     }
 
                     if !group_entry_details.updates.is_empty() {
@@ -248,9 +234,7 @@ pub fn get_all_my_groups() -> ExternResult<MyGroupListWrapper> {
         }
     }
 
-    let output: MyGroupListWrapper = MyGroupListWrapper(my_linked_groups_entries);
-
-    Ok(output)
+    Ok(my_linked_groups_entries)
 }
 
 // UTILS FUNCTIONS
@@ -304,9 +288,7 @@ pub fn get_group_latest_version(group_id: EntryHash) -> ExternResult<Group> {
         } // match ends
     } // if let ends
 
-    return Err(HdkError::Wasm(WasmError::Zome(
-        "the given group_id does not exist".into(),
-    )));
+    return error("the given group_id does not exist");
 }
 
 pub fn link_and_emit_signals(
@@ -314,7 +296,7 @@ pub fn link_and_emit_signals(
     link_target: EntryHash,
     link_tag: LinkTag,
     signal_payload: SignalPayload,
-) -> HdkResult<()> {
+) -> ExternResult<()> {
     for agent in agents.clone() {
         create_link(agent.into(), link_target.clone(), link_tag.clone())?;
     }
@@ -337,11 +319,9 @@ pub fn link_and_emit_signals(
     Ok(())
 }
 
-pub fn get_group_entry_from_element(element: Element) -> HdkResult<Group> {
+pub fn get_group_entry_from_element(element: Element) -> ExternResult<Group> {
     if let Some(group) = element.entry().to_app_option()? {
         return Ok(group);
     }
-    return Err(HdkError::Wasm(WasmError::Zome(
-        "we can't get the entry for the given element".into(),
-    )));
+    return error("we can't get the entry for the given element");
 }

@@ -1,4 +1,3 @@
-use derive_more::{From, Into};
 use hdk3::prelude::*;
 pub mod handlers;
 
@@ -20,29 +19,20 @@ pub struct PerGroupPreference {
     read_receipt: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PreferenceIO {
     typing_indicator: Option<bool>,
     read_receipt: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PerAgentPreferenceIO {
     typing_indicator: Option<Vec<AgentPubKey>>,
     read_receipt: Option<Vec<AgentPubKey>>,
 }
 
-#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PerGroupPreferenceIO {
     typing_indicator: Option<Vec<String>>,
     read_receipt: Option<Vec<String>>,
 }
-
-#[derive(From, Into, Serialize, Deserialize, SerializedBytes)]
-pub struct PreferenceWrapper(Preference);
-
-#[derive(From, Into, Serialize, Deserialize, SerializedBytes)]
-pub struct PerAgentPreferenceWrapper(PerAgentPreference);
-
-#[derive(From, Into, Serialize, Deserialize, SerializedBytes)]
-pub struct PerGroupPreferenceWrapper(PerGroupPreference);

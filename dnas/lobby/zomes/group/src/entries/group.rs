@@ -4,7 +4,7 @@ use hdk3::prelude::*;
 pub mod handlers;
 
 //GROUP TYPE DEFINITION, GETTERS, SETTERS, ENTRY_DEF, UTILS ...
-#[derive(Serialize, Deserialize, SerializedBytes, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, SerializedBytes)]
 pub struct Group {
     pub name: String,
     pub created: Timestamp,
@@ -50,14 +50,14 @@ entry_def!(Group
 //END OF GROUP TYPE DEFINITION
 
 // IO TYPES DEFINITION
-#[derive(Serialize, Deserialize, SerializedBytes, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateMembersIO {
     pub members: Vec<AgentPubKey>,
     pub group_id: EntryHash,
     pub group_revision_id: HeaderHash,
 }
 
-#[derive(Serialize, Deserialize, SerializedBytes, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateGroupNameIO {
     name: String,
     group_id: EntryHash,
@@ -66,7 +66,7 @@ pub struct UpdateGroupNameIO {
 // END OF IO TYPES DEFINITION
 
 //INPUTS TYPES DEFINITION
-#[derive(Serialize, Deserialize, SerializedBytes, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CreateGroupInput {
     name: String,
     members: Vec<AgentPubKey>,
@@ -74,13 +74,13 @@ pub struct CreateGroupInput {
 //END OF INPUTS TYPES DEFINITION
 
 //OUTPUTS TYPES DEFINITION
-#[derive(Deserialize, Serialize, SerializedBytes)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct CreateGroupOutput {
     pub content: Group,
     pub group_id: EntryHash,
     pub group_revision_id: HeaderHash,
 }
-#[derive(Deserialize, Serialize, SerializedBytes)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct GroupOutput {
     group_id: EntryHash,
     group_revision_id: HeaderHash,
@@ -105,24 +105,8 @@ impl GroupOutput {
 }
 //END OF OUTPUTS TYPES DEFINITION
 
-//WRAPPERS TYPES DEFINITION
-#[derive(Deserialize, Serialize, SerializedBytes)]
-pub struct BlockedWrapper(pub Vec<AgentPubKey>);
-
-#[derive(Deserialize, Serialize, SerializedBytes)]
-pub struct MyGroupListWrapper(pub Vec<GroupOutput>);
-
-#[derive(Deserialize, Serialize, SerializedBytes)]
-pub struct AgentPubKeysWrapper(Vec<AgentPubKey>);
-
-#[derive(Deserialize, Serialize, SerializedBytes)]
-pub struct EntryHashWrapper {
-    pub group_hash: EntryHash,
-}
-//END OF WRAPPERS TYPES DEFINITION
-
 //VALIDATION TYPES DEFINITION (this types are created just for testing purposes and can be removed in the future)
-#[derive(Deserialize, Serialize, SerializedBytes)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ValidationInput {
     pub validation_type: String,
     pub group_revision_id: HeaderHash,

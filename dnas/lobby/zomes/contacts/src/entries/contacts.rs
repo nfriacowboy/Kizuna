@@ -2,13 +2,7 @@ use hdk3::prelude::*;
 use timestamp::Timestamp;
 pub mod handlers;
 
-#[derive(Deserialize, Serialize, SerializedBytes)]
-pub struct BooleanWrapper(pub bool);
-
-#[derive(Deserialize, Serialize, SerializedBytes)]
-pub struct AgentPubKeysWrapper(pub Vec<AgentPubKey>);
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, SerializedBytes)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum ContactType {
     Add,
     Remove,
@@ -17,7 +11,7 @@ pub enum ContactType {
 }
 
 #[hdk_entry(id = "contact", visibility = "private")]
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Contact {
     agent_ids: Vec<AgentPubKey>,
     created: Timestamp,

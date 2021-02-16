@@ -7,23 +7,15 @@ mod utils;
 use entries::group;
 
 use entries::group::{
-    handlers::get_group_entry_from_element,
-    CreateGroupInput,
-    CreateGroupOutput,
-    EntryHashWrapper,
-    // TYPES USED IN CREATE GROUP:
-    Group,
-    // TYPES USED IN GET ALL MY GROUPS
-    MyGroupListWrapper,
-    // TYPES USED IN UPDATE GROUP NAME
-    UpdateGroupNameIO,
-    // TYPES USED IN ADD MEMEBERS AND REMOVE MEMBERS:
-    UpdateMembersIO,
-    // TYPES USED IN VALIDATION FUNCTIONS
-    ValidationInput,
+    handlers::get_group_entry_from_element, CreateGroupInput, CreateGroupOutput, Group,
+    GroupOutput, UpdateGroupNameIO, UpdateMembersIO, ValidationInput,
 };
 
 entry_defs![Group::entry_def(), Path::entry_def()];
+
+pub fn error<T>(reason: &str) -> ExternResult<T> {
+    Err(WasmError::Guest(String::from(reason)))
+}
 
 // this is only exposed outside of WASM for testing purposes.
 #[hdk_extern]
@@ -214,7 +206,7 @@ fn create_group(create_group_input: CreateGroupInput) -> ExternResult<CreateGrou
 }
 
 #[hdk_extern]
-fn add_members(add_members_input: UpdateMembersIO) -> HdkResult<UpdateMembersIO> {
+fn add_members(add_members_input: UpdateMembersIO) -> ExternResult<UpdateMembersIO> {
     group::handlers::add_members(add_members_input)
 }
 
@@ -231,11 +223,11 @@ fn update_group_name(
 }
 
 #[hdk_extern]
-fn get_all_my_groups(_: ()) -> HdkResult<MyGroupListWrapper> {
+fn get_all_my_groups(_: ()) -> ExternResult<Vec<GroupOutput>> {
     group::handlers::get_all_my_groups()
 }
 
 #[hdk_extern]
-fn get_group_latest_version(group_id: EntryHashWrapper) -> ExternResult<Group> {
-    group::handlers::get_group_latest_version(group_id.group_hash)
+fn get_group_latest_version(group_id: EntryHash) -> ExternResult<Group> {
+    group::handlers::get_group_latest_version(group_id)
 }
