@@ -53,13 +53,11 @@ pub fn init(_: ()) -> ExternResult<InitCallbackResult> {
     let mut fuctions = HashSet::new();
 
     // TODO: name may be changed to better suit the context of cap grant.s
-    let tag: String = "create_group_cap_grant".into();
+    let tag: String = "group_zome_cap_grant".into();
     let access: CapAccess = CapAccess::Unrestricted;
-
     let zome_name: ZomeName = zome_info()?.zome_name;
-    let function_name: FunctionName = FunctionName("recv_remote_signal".into());
 
-    fuctions.insert((zome_name, function_name));
+    fuctions.insert((zome_name.clone(), FunctionName("recv_remote_signal".into()) ));
 
     let cap_grant_entry: CapGrantEntry = CapGrantEntry::new(
         tag,    // A string by which to later query for saved grants.
@@ -83,13 +81,13 @@ fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
             emit_signal(&signal_detail)?;
         }
         SignalPayload::GroupTypingDetail(_) => {
-            emit_signal(&signal)?;
+            emit_signal(&signal_detail)?;
         }
         SignalPayload::GroupMessageRead(_) => {
-            emit_signal(&signal)?;
+            emit_signal(&signal_detail)?;
         }
         SignalPayload::GroupMessageData(_) => {
-            emit_signal(&signal)?;
+            emit_signal(&signal_detail)?;
         }
     }
     Ok(())

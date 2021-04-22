@@ -76,7 +76,7 @@ export function signalHandler(signal, signal_listener) {
             } 
         }
     }
-    */
+  */
 
   signal_listener.counter++;
   signal_listener.payload = signal.data.payload.payload;

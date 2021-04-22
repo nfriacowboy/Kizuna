@@ -33,9 +33,9 @@ export default (config, installables) => {
   getMessagesByGroupByTimestampTest(config, installables); // good
   getLatestMessagesForAllGroupsTest(config, installables); // good
   fetchFilesForAParticularDateTest(config, installables); // good
+  groupTypingIndicatorTest(config, installables); // good
+  readGroupMessageTest(config, installables); // good
 
 
   
-  // groupTypingIndicatorTest(config, installables); // not-goodk
-  // readGroupMessageTest(config, installables); // not-good
 };

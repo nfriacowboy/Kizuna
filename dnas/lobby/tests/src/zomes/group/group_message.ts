@@ -293,6 +293,7 @@ function groupTypingIndicatorTest(config, installables) {
       // the counter is 2 since createGroup and indicateGroupTyping both calls remote_signal()
       t.equal(bobby_signal_listener.counter, 2);
       t.equal(charlie_signal_listener.counter, 2);
+
       t.deepEqual(bobby_signal_listener.payload, {
         type: "GROUP_TYPING_DETAIL",
         payload: group_typing_detail_data,
@@ -301,6 +302,7 @@ function groupTypingIndicatorTest(config, installables) {
         type: "GROUP_TYPING_DETAIL",
         payload: group_typing_detail_data,
       });
+
     }
   );
 
