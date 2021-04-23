@@ -1,8 +1,8 @@
+use file_types::Payload;
 use hdk::prelude::*;
 use hdk::prelude::{element::SignedHeaderHashed, timestamp::Timestamp};
-use file_types::Payload;
-use std::time::SystemTime;
 use std::collections::hash_map::HashMap;
+use std::time::SystemTime;
 
 // for contacts
 #[derive(Deserialize, Serialize, SerializedBytes, Debug)]
@@ -10,6 +10,7 @@ pub struct AgentPubKeys(pub Vec<AgentPubKey>);
 
 // for username
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
+#[serde(rename_all = "camelCase")]
 pub struct UsernameInfo {
     username: String,
     agent_id: AgentPubKey,
@@ -22,6 +23,7 @@ pub struct UsernameList(Vec<UsernameInfo>);
 
 // for group
 #[derive(Deserialize, Serialize, SerializedBytes, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GroupOutput {
     pub group_id: EntryHash,
     pub group_revision_id: HeaderHash,
@@ -77,6 +79,7 @@ pub struct MessagesByGroup(pub HashMap<String, Vec<GroupMessageHash>>);
 pub struct GroupMessagesContents(pub HashMap<String, GroupMessageContent>);
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GroupMessagesOutput {
     messages_by_group: MessagesByGroup,
     group_messages_contents: GroupMessagesContents,
